@@ -35,6 +35,8 @@ const server = Bun.serve({
   // Solo accesible desde esta máquina: la UI puede enviar emails reales
   hostname: "127.0.0.1",
   port: PORT,
+  // Descargar la audiencia de Resend tarda ~10-15 s (por defecto Bun corta a los 10 s)
+  idleTimeout: 120,
   routes: {
     "/": page,
     "/api/config": handle(async () => ({
@@ -46,7 +48,9 @@ const server = Bun.serve({
       testAudience: TEST_AUDIENCE,
       backendConfigured: Boolean(process.env.BACKEND_DATABASE_URL),
     })),
-    "/api/overview": handle(() => getOverview()),
+    "/api/overview": handle((req) =>
+      getOverview({ fresh: new URL(req.url).searchParams.has("fresh") }),
+    ),
     "/api/templates": handle(() => listTemplates()),
     "/api/pending": handle(async (req) => {
       const url = new URL(req.url);
@@ -57,6 +61,8 @@ const server = Bun.serve({
     }),
     "/api/send": {
       POST: handle(async (req) => {
+        // Una tanda grande tarda minutos (~0,8 s por email): sin límite de tiempo
+        server.timeout(req, 0);
         const body = (await req.json()) as Record<string, unknown>;
         const templateId = String(body.templateId ?? "").trim();
         if (!templateId) throw new Error("Falta la plantilla");

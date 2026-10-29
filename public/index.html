@@ -9,6 +9,7 @@
     --bg: #f6f7f5; --surface: #ffffff; --text: #17201a; --muted: #5f6b63;
     --border: #e2e6e1; --accent: #1f7a4d; --accent-soft: #e4f2ea;
     --warn: #a15c00; --warn-soft: #fff3e0; --danger: #b42318; --danger-soft: #fdecea;
+    --skeleton: #eceee9; --skeleton-shine: #f7f8f5;
     color-scheme: light;
   }
   @media (prefers-color-scheme: dark) {
@@ -16,6 +17,7 @@
       --bg: #0f1411; --surface: #171e1a; --text: #e7ece8; --muted: #93a098;
       --border: #26302a; --accent: #4cc38a; --accent-soft: #163024;
       --warn: #f0a648; --warn-soft: #33260f; --danger: #f2766b; --danger-soft: #3a1714;
+      --skeleton: #212a24; --skeleton-shine: #2b362f;
       color-scheme: dark;
     }
   }
@@ -29,12 +31,14 @@
   .muted { color: var(--muted); }
   .small { font-size: 12px; }
   button { font: inherit; cursor: pointer; border-radius: 8px; border: 1px solid var(--border);
-    background: var(--surface); color: var(--text); padding: 7px 12px; }
+    background: var(--surface); color: var(--text); padding: 7px 12px;
+    display: inline-flex; align-items: center; gap: 8px; }
   button:disabled { opacity: .5; cursor: default; }
   button.primary { background: var(--accent); border-color: var(--accent); color: #fff; font-weight: 600; }
   button.danger { background: var(--danger); border-color: var(--danger); color: #fff; font-weight: 600; }
   input, select { font: inherit; color: var(--text); background: var(--bg); border: 1px solid var(--border);
     border-radius: 8px; padding: 7px 10px; width: 100%; }
+  input:disabled { opacity: .6; }
   .banner { margin-top: 16px; padding: 10px 14px; border-radius: 8px; background: var(--warn-soft); color: var(--warn); }
   .banner.error { background: var(--danger-soft); color: var(--danger); }
   .kpis { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 12px; margin: 20px 0; }
@@ -44,17 +48,20 @@
   .panels { display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 12px; }
   .field { margin-top: 12px; }
   .field label { display: block; font-size: 12px; color: var(--muted); margin-bottom: 4px; }
+  .input-wrap { position: relative; }
+  .input-wrap .spinner { position: absolute; right: 10px; top: 50%; margin-top: -7px; }
   .row { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
   .row > .grow { flex: 1; min-width: 120px; }
   .toggle { display: flex; gap: 0; border: 1px solid var(--border); border-radius: 8px; overflow: hidden; }
   .toggle button { border: 0; border-radius: 0; background: transparent; }
   .toggle button.on { background: var(--accent-soft); color: var(--accent); font-weight: 600; }
   .toggle button.on.real { background: var(--danger-soft); color: var(--danger); }
-  .pending { margin-top: 12px; padding: 10px 12px; border-radius: 8px; background: var(--bg); font-size: 13px; }
+  .pending { margin-top: 12px; padding: 10px 12px; border-radius: 8px; background: var(--bg); font-size: 13px; min-height: 44px;
+    display: flex; flex-direction: column; justify-content: center; }
   .result { margin-top: 12px; font-size: 13px; white-space: pre-wrap; }
   .result.ok { color: var(--accent); } .result.err { color: var(--danger); }
   section.contacts { margin-top: 20px; }
-  .tabs { display: flex; gap: 6px; flex-wrap: wrap; margin: 12px 0; }
+  .tabs { display: flex; gap: 6px; flex-wrap: wrap; margin: 12px 0; min-height: 36px; }
   .tabs button.on { background: var(--accent-soft); color: var(--accent); border-color: transparent; font-weight: 600; }
   .table-wrap { overflow-x: auto; }
   table { width: 100%; border-collapse: collapse; font-size: 13px; }
@@ -63,10 +70,32 @@
   td.err { color: var(--danger); white-space: normal; max-width: 280px; }
   .pill { display: inline-block; padding: 1px 8px; border-radius: 999px; font-size: 12px; background: var(--bg); color: var(--muted); }
   .pill.yes { background: var(--accent-soft); color: var(--accent); }
-  .pill.no-ok { background: var(--warn-soft); color: var(--warn); }
+
+  /* Carga */
+  .skeleton { display: inline-block; height: 12px; width: 100%; border-radius: 6px; vertical-align: middle;
+    background: linear-gradient(90deg, var(--skeleton) 25%, var(--skeleton-shine) 50%, var(--skeleton) 75%);
+    background-size: 200% 100%; animation: shimmer 1.3s ease-in-out infinite; }
+  .skeleton.value { height: 30px; width: 70px; margin: 3px 0 6px; }
+  .skeleton.label { width: 120px; }
+  .skeleton.tab { height: 34px; width: 110px; border-radius: 8px; }
+  .skeleton.line { width: 60%; }
+  @keyframes shimmer { from { background-position: 200% 0; } to { background-position: -200% 0; } }
+  .spinner { display: inline-block; width: 14px; height: 14px; flex: none; border-radius: 50%;
+    border: 2px solid currentColor; border-right-color: transparent; animation: spin .7s linear infinite; opacity: .8; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  .progress { position: fixed; top: 0; left: 0; right: 0; height: 3px; overflow: hidden; z-index: 10; visibility: hidden; }
+  .progress::after { content: ""; position: absolute; inset: 0; width: 35%; background: var(--accent);
+    animation: indeterminate 1.1s ease-in-out infinite; }
+  body.refreshing .progress { visibility: visible; }
+  @keyframes indeterminate { from { transform: translateX(-100%); } to { transform: translateX(300%); } }
+  .stale { opacity: .55; pointer-events: none; transition: opacity .2s; }
+  @media (prefers-reduced-motion: reduce) {
+    .skeleton, .spinner, .progress::after { animation-duration: 3s; }
+  }
 </style>
 </head>
 <body>
+<div class="progress" aria-hidden="true"></div>
 <main>
   <header>
     <h1>TeeUp · Campañas de email</h1>
@@ -77,7 +106,7 @@
   </header>
   <div id="banners"></div>
 
-  <div class="kpis" id="kpis"></div>
+  <div class="kpis data" id="kpis"></div>
 
   <div class="panels">
     <div class="card send-panel" data-segment="leads">
@@ -90,7 +119,7 @@
     </div>
   </div>
 
-  <section class="card contacts">
+  <section class="card contacts data">
     <div class="row">
       <h2 class="grow">Contactos</h2>
       <input id="search" class="grow" type="search" placeholder="Buscar email…" style="max-width:280px" />
@@ -103,11 +132,11 @@
     <div class="muted small" id="rows-info" style="margin-top:8px"></div>
   </section>
 
-  <section class="card" style="margin-top:20px">
+  <section class="card data" style="margin-top:20px">
     <h2>Historial de envíos</h2>
     <div class="table-wrap"><table>
       <thead><tr><th>Plantilla</th><th>Segmento</th><th>Enviados</th><th>Fallidos</th><th>Último envío</th></tr></thead>
-      <tbody id="newsletter-rows"></tbody>
+      <tbody id="history-rows"></tbody>
     </table></div>
   </section>
 </main>
@@ -116,9 +145,13 @@
 const $ = (s, el = document) => el.querySelector(s);
 const esc = (s) => String(s).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]);
 const MAX_ROWS = 300;
+const SEND_SECONDS_PER_EMAIL = 0.8; // pausa de 600 ms + la propia petición
+const SPINNER = '<span class="spinner" aria-hidden="true"></span>';
+const SEGMENT_LABELS = { leads: "Leads", registered: "Registrados" };
 
-let config = null, overview = null, templates = [];
+let config = null, overview = null;
 let filter = "all";
+let loading = false;
 
 async function api(path, opts) {
   const res = await fetch(path, opts);
@@ -135,23 +168,37 @@ const FILTERS = {
   all: ["Todos", () => true],
   registered: ["Registrados", (c) => c.registered],
   leads: ["Leads", (c) => !c.registered],
-  leadsPending: ["Leads sin welcome", (c) => !c.registered && !c.welcomed],
-  converted: ["Welcome → registrados", (c) => c.registered && c.welcomed],
+  converted: ["Con welcome y registrados", (c) => c.registered && c.welcomed],
   errors: ["Con error", (c) => !!c.error],
 };
 
+// ---- Skeletons (primera carga) ----
+function renderSkeletons() {
+  $("#kpis").innerHTML = Array.from({ length: 5 }, () =>
+    `<div class="card kpi"><span class="skeleton value"></span><br><span class="skeleton label"></span></div>`).join("");
+  $("#tabs").innerHTML = Array.from({ length: 5 }, () => `<span class="skeleton tab"></span>`).join("");
+  const widths = [220, 40, 60, 90, 120];
+  $("#rows").innerHTML = Array.from({ length: 8 }, () =>
+    `<tr>${widths.map((w) => `<td><span class="skeleton" style="width:${w}px"></span></td>`).join("")}</tr>`).join("");
+  $("#rows-info").innerHTML = `<span class="skeleton" style="width:90px"></span>`;
+  $("#history-rows").innerHTML = Array.from({ length: 2 }, () =>
+    `<tr>${[140, 70, 30, 30, 120].map((w) => `<td><span class="skeleton" style="width:${w}px"></span></td>`).join("")}</tr>`).join("");
+}
+
+// ---- Datos ----
 function renderKpis() {
   const c = overview.contacts;
   const registered = c.filter((x) => x.registered).length;
   const welcomed = c.filter((x) => x.welcomed).length;
   const converted = c.filter((x) => x.welcomed && x.registered).length;
   const pct = welcomed ? Math.round((converted / welcomed) * 100) : 0;
+  const fmt = (n) => n.toLocaleString("es-ES");
   const kpis = [
-    [c.length, "Audiencia (suscritos)"],
-    [registered, "Registrados en la app"],
-    [c.length - registered, "Leads sin registrar"],
-    [welcomed, "Welcome enviado"],
-    [`${converted} <span class="small muted">(${pct}%)</span>`, "Con welcome y registrados"],
+    [fmt(c.length), "Audiencia (suscritos)"],
+    [fmt(registered), "Registrados en la app"],
+    [fmt(c.length - registered), "Leads sin registrar"],
+    [fmt(welcomed), "1er welcome enviado"],
+    [`${fmt(converted)} <span class="small muted">(${pct}%)</span>`, "Con welcome y registrados"],
   ];
   $("#kpis").innerHTML = kpis.map(([v, l]) =>
     `<div class="card kpi"><div class="value">${v}</div><div class="label">${l}</div></div>`).join("");
@@ -160,14 +207,15 @@ function renderKpis() {
 function renderTabs() {
   $("#tabs").innerHTML = Object.entries(FILTERS).map(([key, [label, fn]]) => {
     const n = overview.contacts.filter(fn).length;
-    return `<button data-filter="${key}" class="${key === filter ? "on" : ""}">${label} · ${n}</button>`;
+    return `<button data-filter="${key}" class="${key === filter ? "on" : ""}">${label} · ${n.toLocaleString("es-ES")}</button>`;
   }).join("");
 }
 
 function renderRows() {
+  if (!overview) return;
   const q = $("#search").value.trim().toLowerCase();
   const list = overview.contacts.filter(FILTERS[filter][1]).filter((c) => !q || c.email.includes(q));
-  const pill = (on, yes, no, cls = "") => `<span class="pill ${on ? "yes" : cls}">${on ? yes : no}</span>`;
+  const pill = (on, yes, no) => `<span class="pill ${on ? "yes" : ""}">${on ? yes : no}</span>`;
   $("#rows").innerHTML = list.slice(0, MAX_ROWS).map((c) => `<tr>
     <td>${esc(c.email)}</td>
     <td>${pill(c.registered, "Sí", "No")}</td>
@@ -176,61 +224,86 @@ function renderRows() {
     <td class="err">${c.error ? esc(c.error) : ""}</td>
   </tr>`).join("") || `<tr><td colspan="5" class="muted">Sin resultados</td></tr>`;
   $("#rows-info").textContent = list.length > MAX_ROWS
-    ? `Mostrando ${MAX_ROWS} de ${list.length}. Usa la búsqueda para afinar.` : `${list.length} contactos`;
+    ? `Mostrando ${MAX_ROWS} de ${list.length.toLocaleString("es-ES")}. Usa la búsqueda para afinar.`
+    : `${list.length.toLocaleString("es-ES")} contactos`;
 }
-
-const SEGMENT_LABELS = { leads: "Leads", registered: "Registrados" };
 
 function renderHistory() {
   const rows = overview.history;
-  $("#newsletter-rows").innerHTML = rows.length
+  $("#history-rows").innerHTML = rows.length
     ? rows.map((r) => `<tr><td>${esc(r.templateId)}</td><td>${SEGMENT_LABELS[r.segment] ?? esc(r.segment)}</td>
         <td>${r.sent}</td><td>${r.failed}</td><td>${new Date(r.lastSentAt).toLocaleString("es-ES")}</td></tr>`).join("")
     : `<tr><td colspan="5" class="muted">Sin envíos todavía (el primer welcome se registró aparte, en la columna "1er welcome")</td></tr>`;
 }
 
+function renderUpdated() {
+  if (!overview) return;
+  const mins = Math.floor((Date.now() - new Date(overview.loadedAt)) / 60000);
+  $("#updated").textContent = mins < 1 ? "Datos de hace menos de 1 min" : `Datos de hace ${mins} min`;
+}
+
+// ---- Paneles de envío ----
 function setupPanel(panel) {
   const segment = panel.dataset.segment;
   const defaultTemplate = config.defaultTemplates[segment] ?? "";
   panel.insertAdjacentHTML("beforeend", `
     <div class="field"><label>Plantilla de Resend</label>
-      <input class="template" list="templates-list" value="${esc(defaultTemplate)}" placeholder="alias o id de la plantilla" /></div>
+      <div class="input-wrap">
+        <input class="template" list="templates-list" value="${esc(defaultTemplate)}" placeholder="Cargando plantillas…" disabled />
+        ${SPINNER}
+      </div></div>
     <div class="field row">
       <div class="grow"><label>Máximo por tanda</label><input class="limit" type="number" min="1" max="500" value="${config.batchSize}" /></div>
       <div><label>Modo</label><div class="toggle">
         <button class="mode on" data-test="true">Test</button><button class="mode" data-test="false">Real</button>
       </div></div>
     </div>
-    <div class="pending muted">—</div>
+    <div class="pending muted"><span class="skeleton line"></span></div>
     <div class="row" style="margin-top:12px">
-      <button class="primary send">Enviar</button>
+      <button class="primary send" disabled>Enviar</button>
       <button class="cancel" hidden>Cancelar</button>
     </div>
     <div class="result"></div>`);
 
-  let test = true, armed = false;
+  let test = true, armed = false, sending = false, pendingCount = null, pendingSeq = 0;
   const sendBtn = $(".send", panel), cancelBtn = $(".cancel", panel);
   const templateInput = $(".template", panel), limitInput = $(".limit", panel);
+  const pendingBox = $(".pending", panel);
 
-  const disarm = () => {
-    armed = false;
-    cancelBtn.hidden = true;
-    sendBtn.className = "primary send";
-    sendBtn.textContent = test ? `Enviar prueba a ${config.testAudience.join(", ")}` : "Enviar";
-  };
+  const batchSize = () => Math.min(pendingCount ?? 0, Number(limitInput.value) || 0);
+
+  function renderButton() {
+    if (sending) return;
+    cancelBtn.hidden = !armed;
+    sendBtn.className = armed ? "danger send" : "primary send";
+    sendBtn.textContent = test
+      ? `Enviar prueba a ${config.testAudience.join(", ")}`
+      : armed ? `Confirmar envío real a ${batchSize()}` : `Enviar a ${batchSize()}`;
+    // En real hace falta saber cuántos pendientes hay (y que haya alguno)
+    sendBtn.disabled = !templateInput.value.trim() || (!test && !pendingCount);
+  }
+
+  const disarm = () => { armed = false; renderButton(); };
 
   async function refreshPending() {
-    const box = $(".pending", panel);
     const templateId = templateInput.value.trim();
-    if (!templateId) { box.textContent = "Elige una plantilla"; return; }
-    if (!config.backendConfigured) { box.textContent = "Configura BACKEND_DATABASE_URL para ver pendientes"; return; }
-    box.textContent = "Calculando pendientes…";
+    const seq = ++pendingSeq;
+    pendingCount = null;
+    disarm();
+    if (!templateId) { pendingBox.textContent = "Elige una plantilla"; return; }
+    if (!config.backendConfigured) { pendingBox.textContent = "Configura BACKEND_DATABASE_URL para ver pendientes"; return; }
+    pendingBox.innerHTML = `<div class="row">${SPINNER}<span>Calculando pendientes…</span></div>`;
     try {
       const { count, sample } = await api(`/api/pending?segment=${segment}&templateId=${encodeURIComponent(templateId)}`);
-      const limit = Number(limitInput.value) || 0;
-      box.innerHTML = `<strong>${count}</strong> pendientes · esta tanda: <strong>${Math.min(count, limit)}</strong>` +
+      if (seq !== pendingSeq) return; // llegó una respuesta más nueva
+      pendingCount = count;
+      pendingBox.innerHTML = `<div><strong>${count.toLocaleString("es-ES")}</strong> pendientes · esta tanda: <strong>${batchSize()}</strong></div>` +
         (sample.length ? `<div class="small">Ej.: ${sample.slice(0, 3).map(esc).join(", ")}${count > 3 ? "…" : ""}</div>` : "");
-    } catch (e) { box.textContent = e.message; }
+    } catch (e) {
+      if (seq !== pendingSeq) return;
+      pendingBox.innerHTML = `<span style="color:var(--danger)">${esc(e.message)}</span>`;
+    }
+    renderButton();
   }
 
   panel.querySelectorAll(".mode").forEach((b) => b.addEventListener("click", () => {
@@ -239,27 +312,29 @@ function setupPanel(panel) {
     b.classList.toggle("real", !test);
     disarm();
   }));
-  templateInput.addEventListener("change", () => { disarm(); refreshPending(); });
-  limitInput.addEventListener("change", () => { disarm(); refreshPending(); });
+  templateInput.addEventListener("change", refreshPending);
+  limitInput.addEventListener("input", () => {
+    disarm();
+    if (pendingCount !== null) $("strong:nth-of-type(2)", pendingBox).textContent = batchSize();
+  });
   cancelBtn.addEventListener("click", disarm);
 
   sendBtn.addEventListener("click", async () => {
     const templateId = templateInput.value.trim();
     const limit = Number(limitInput.value) || 0;
     const result = $(".result", panel);
-    if (!templateId) { result.className = "result err"; result.textContent = "Falta la plantilla"; return; }
     // Envío real: primer clic arma, segundo confirma
-    if (!test && !armed) {
-      armed = true;
-      cancelBtn.hidden = false;
-      sendBtn.className = "danger send";
-      sendBtn.textContent = `Confirmar envío real (hasta ${limit})`;
-      return;
-    }
+    if (!test && !armed) { armed = true; renderButton(); return; }
+
+    const expected = test ? config.testAudience.length : batchSize();
+    const seconds = Math.ceil(expected * SEND_SECONDS_PER_EMAIL);
+    sending = true;
+    cancelBtn.hidden = true;
     sendBtn.disabled = true;
-    sendBtn.textContent = "Enviando…";
+    sendBtn.innerHTML = `${SPINNER} Enviando ${expected} email${expected === 1 ? "" : "s"}…`;
+    panel.querySelectorAll("input, .mode").forEach((el) => (el.disabled = true));
     result.className = "result muted";
-    result.textContent = "Enviando, puede tardar un poco…";
+    result.textContent = seconds > 5 ? `Tardará unos ${seconds} s. No cierres esta pestaña.` : "";
     try {
       const r = await api("/api/send", {
         method: "POST",
@@ -270,45 +345,73 @@ function setupPanel(panel) {
       result.textContent = `Enviados: ${r.sent.length} · Fallidos: ${r.failed.length}` +
         (test ? " (prueba, no se registra)" : ` · Quedan pendientes: ${r.pending}`) +
         r.failed.map((f) => `\n${f.email}: ${f.error}`).join("");
-      if (!test) await load();
     } catch (e) {
       result.className = "result err";
       result.textContent = e.message;
     } finally {
-      sendBtn.disabled = false;
-      disarm();
+      sending = false;
+      armed = false;
+      panel.querySelectorAll("input, .mode").forEach((el) => (el.disabled = false));
+      renderButton();
     }
+    if (!test) await load();
   });
 
   panel.refreshPending = refreshPending;
-  disarm();
+  panel.enableTemplates = () => {
+    templateInput.disabled = false;
+    templateInput.placeholder = "alias o id de la plantilla";
+    $(".input-wrap .spinner", panel)?.remove();
+  };
+  renderButton();
 }
 
-async function load() {
-  $("#refresh").disabled = true;
+// ---- Carga ----
+async function load({ fresh = false } = {}) {
+  if (loading) return;
+  loading = true;
+  const firstLoad = !overview;
+  const refreshBtn = $("#refresh");
+  refreshBtn.disabled = true;
+  refreshBtn.innerHTML = `${SPINNER} Actualizando`;
+  $("#banners").querySelectorAll(".error").forEach((x) => x.remove());
+  if (firstLoad) renderSkeletons();
+  else {
+    document.body.classList.add("refreshing");
+    document.querySelectorAll(".data").forEach((el) => el.classList.add("stale"));
+  }
   try {
-    overview = await api("/api/overview");
-    renderKpis(); renderTabs(); renderRows(); renderHistory();
-    $("#updated").textContent = `Actualizado ${new Date().toLocaleTimeString("es-ES")}`;
+    overview = await api(`/api/overview${fresh ? "?fresh=1" : ""}`);
+    renderKpis(); renderTabs(); renderRows(); renderHistory(); renderUpdated();
     document.querySelectorAll(".send-panel").forEach((p) => p.refreshPending?.());
   } catch (e) {
-    $("#kpis").innerHTML = "";
+    if (firstLoad) { $("#kpis").innerHTML = ""; $("#tabs").innerHTML = ""; $("#rows").innerHTML = ""; $("#rows-info").textContent = ""; $("#history-rows").innerHTML = ""; }
     banner(`No se pudieron cargar los datos: ${esc(e.message)}`, "error");
   } finally {
-    $("#refresh").disabled = false;
+    loading = false;
+    document.body.classList.remove("refreshing");
+    document.querySelectorAll(".data").forEach((el) => el.classList.remove("stale"));
+    refreshBtn.disabled = false;
+    refreshBtn.textContent = "Actualizar";
   }
 }
 
-async function init() {
-  config = await api("/api/config");
-  if (!config.backendConfigured) {
-    banner("Falta <code>BACKEND_DATABASE_URL</code> en <code>.env</code>: sin ella no se puede saber quién está registrado.");
-  }
+async function loadTemplates() {
+  let templates = [];
   try { templates = await api("/api/templates"); } catch (e) {
     banner(`No se pudieron cargar las plantillas de Resend (${esc(e.message)}). Puedes escribir el alias a mano.`);
   }
   document.body.insertAdjacentHTML("beforeend",
     `<datalist id="templates-list">${templates.map((t) => `<option value="${esc(t.id)}">${esc(t.name)}</option>`).join("")}</datalist>`);
+  document.querySelectorAll(".send-panel").forEach((p) => p.enableTemplates());
+}
+
+async function init() {
+  renderSkeletons();
+  try { config = await api("/api/config"); } catch (e) {
+    banner(`No se pudo conectar con el servidor: ${esc(e.message)}`, "error");
+    return;
+  }
   document.querySelectorAll(".send-panel").forEach(setupPanel);
 
   $("#tabs").addEventListener("click", (e) => {
@@ -318,9 +421,17 @@ async function init() {
     renderTabs(); renderRows();
   });
   $("#search").addEventListener("input", renderRows);
-  $("#refresh").addEventListener("click", () => { $("#banners").querySelectorAll(".error").forEach((x) => x.remove()); load(); });
+  $("#refresh").addEventListener("click", () => load({ fresh: true }));
+  setInterval(renderUpdated, 30_000);
 
-  if (config.backendConfigured) await load();
+  if (!config.backendConfigured) {
+    banner("Falta <code>BACKEND_DATABASE_URL</code> en <code>.env</code>: sin ella no se puede saber quién está registrado.");
+    $("#kpis").innerHTML = ""; $("#tabs").innerHTML = ""; $("#rows").innerHTML = ""; $("#rows-info").textContent = ""; $("#history-rows").innerHTML = "";
+    loadTemplates();
+    return;
+  }
+  // Plantillas (1 petición) y datos en paralelo
+  await Promise.all([loadTemplates(), load()]);
 }
 
 init();

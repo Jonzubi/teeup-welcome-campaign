@@ -72,8 +72,15 @@ async function recordSend(
 }
 
 // Contactos del segmento que aún no han recibido esta plantilla
-export async function getPendingRecipients(segment: Segment, templateId: string) {
-  const [segments, sent] = await Promise.all([getSegments(), getSentEmails(templateId)]);
+export async function getPendingRecipients(
+  segment: Segment,
+  templateId: string,
+  { fresh = false } = {},
+) {
+  const [segments, sent] = await Promise.all([
+    getSegments({ fresh }),
+    getSentEmails(templateId),
+  ]);
   return segments[segment].filter((e) => !sent.has(e));
 }
 
@@ -85,7 +92,7 @@ export async function sendBatch(opts: SendOptions): Promise<SendResult> {
   try {
     const recipients = opts.test
       ? TEST_AUDIENCE
-      : await getPendingRecipients(opts.segment, opts.templateId);
+      : await getPendingRecipients(opts.segment, opts.templateId, { fresh: true });
     const batch = recipients.slice(0, opts.limit);
     const result: SendResult = {
       sent: [],
@@ -113,8 +120,8 @@ export async function sendBatch(opts: SendOptions): Promise<SendResult> {
 }
 
 // Una fila por contacto de la audiencia, con lo que ha recibido
-export async function getOverview() {
-  const { audience, registered } = await getSegments();
+export async function getOverview({ fresh = false } = {}) {
+  const { audience, registered, loadedAt } = await getSegments({ fresh });
   const registeredSet = new Set(registered);
 
   const [welcomedRows, sendRows] = await Promise.all([
@@ -160,6 +167,7 @@ export async function getOverview() {
   }
 
   return {
+    loadedAt,
     contacts,
     history: [...history.values()].sort((a, b) => +b.lastSentAt - +a.lastSentAt),
   };
