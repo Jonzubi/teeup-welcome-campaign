@@ -1,0 +1,329 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>TeeUp Campaigns</title>
+<style>
+  :root {
+    --bg: #f6f7f5; --surface: #ffffff; --text: #17201a; --muted: #5f6b63;
+    --border: #e2e6e1; --accent: #1f7a4d; --accent-soft: #e4f2ea;
+    --warn: #a15c00; --warn-soft: #fff3e0; --danger: #b42318; --danger-soft: #fdecea;
+    color-scheme: light;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #0f1411; --surface: #171e1a; --text: #e7ece8; --muted: #93a098;
+      --border: #26302a; --accent: #4cc38a; --accent-soft: #163024;
+      --warn: #f0a648; --warn-soft: #33260f; --danger: #f2766b; --danger-soft: #3a1714;
+      color-scheme: dark;
+    }
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--text);
+    font: 14px/1.5 system-ui, -apple-system, "Segoe UI", sans-serif; }
+  main { max-width: 1120px; margin: 0 auto; padding: 24px 16px 64px; }
+  header { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+  h1 { font-size: 20px; margin: 0; }
+  h2 { font-size: 15px; margin: 0 0 4px; }
+  .muted { color: var(--muted); }
+  .small { font-size: 12px; }
+  button { font: inherit; cursor: pointer; border-radius: 8px; border: 1px solid var(--border);
+    background: var(--surface); color: var(--text); padding: 7px 12px; }
+  button:disabled { opacity: .5; cursor: default; }
+  button.primary { background: var(--accent); border-color: var(--accent); color: #fff; font-weight: 600; }
+  button.danger { background: var(--danger); border-color: var(--danger); color: #fff; font-weight: 600; }
+  input, select { font: inherit; color: var(--text); background: var(--bg); border: 1px solid var(--border);
+    border-radius: 8px; padding: 7px 10px; width: 100%; }
+  .banner { margin-top: 16px; padding: 10px 14px; border-radius: 8px; background: var(--warn-soft); color: var(--warn); }
+  .banner.error { background: var(--danger-soft); color: var(--danger); }
+  .kpis { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 12px; margin: 20px 0; }
+  .card { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 16px; }
+  .kpi .value { font-size: 26px; font-weight: 700; font-variant-numeric: tabular-nums; }
+  .kpi .label { color: var(--muted); font-size: 12px; }
+  .panels { display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 12px; }
+  .field { margin-top: 12px; }
+  .field label { display: block; font-size: 12px; color: var(--muted); margin-bottom: 4px; }
+  .row { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+  .row > .grow { flex: 1; min-width: 120px; }
+  .toggle { display: flex; gap: 0; border: 1px solid var(--border); border-radius: 8px; overflow: hidden; }
+  .toggle button { border: 0; border-radius: 0; background: transparent; }
+  .toggle button.on { background: var(--accent-soft); color: var(--accent); font-weight: 600; }
+  .toggle button.on.real { background: var(--danger-soft); color: var(--danger); }
+  .pending { margin-top: 12px; padding: 10px 12px; border-radius: 8px; background: var(--bg); font-size: 13px; }
+  .result { margin-top: 12px; font-size: 13px; white-space: pre-wrap; }
+  .result.ok { color: var(--accent); } .result.err { color: var(--danger); }
+  section.contacts { margin-top: 20px; }
+  .tabs { display: flex; gap: 6px; flex-wrap: wrap; margin: 12px 0; }
+  .tabs button.on { background: var(--accent-soft); color: var(--accent); border-color: transparent; font-weight: 600; }
+  .table-wrap { overflow-x: auto; }
+  table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  th, td { text-align: left; padding: 8px 10px; border-bottom: 1px solid var(--border); white-space: nowrap; }
+  th { color: var(--muted); font-weight: 600; font-size: 12px; }
+  td.err { color: var(--danger); white-space: normal; max-width: 280px; }
+  .pill { display: inline-block; padding: 1px 8px; border-radius: 999px; font-size: 12px; background: var(--bg); color: var(--muted); }
+  .pill.yes { background: var(--accent-soft); color: var(--accent); }
+  .pill.no-ok { background: var(--warn-soft); color: var(--warn); }
+</style>
+</head>
+<body>
+<main>
+  <header>
+    <h1>TeeUp · Campañas de email</h1>
+    <div class="row">
+      <span class="muted small" id="updated"></span>
+      <button id="refresh">Actualizar</button>
+    </div>
+  </header>
+  <div id="banners"></div>
+
+  <div class="kpis" id="kpis"></div>
+
+  <div class="panels">
+    <div class="card send-panel" data-segment="leads">
+      <h2>Leads → que se registren</h2>
+      <div class="muted small">Contactos de la audiencia que aún no se han registrado. Cada plantilla se envía una vez por persona; en cuanto se registran dejan de recibirlos.</div>
+    </div>
+    <div class="card send-panel" data-segment="registered">
+      <h2>Registrados → newsletter</h2>
+      <div class="muted small">Contactos ya registrados en la app. Cada plantilla se envía una vez por persona.</div>
+    </div>
+  </div>
+
+  <section class="card contacts">
+    <div class="row">
+      <h2 class="grow">Contactos</h2>
+      <input id="search" class="grow" type="search" placeholder="Buscar email…" style="max-width:280px" />
+    </div>
+    <div class="tabs" id="tabs"></div>
+    <div class="table-wrap"><table>
+      <thead><tr><th>Email</th><th>Registrado</th><th>1er welcome</th><th>Otros emails</th><th>Último error</th></tr></thead>
+      <tbody id="rows"></tbody>
+    </table></div>
+    <div class="muted small" id="rows-info" style="margin-top:8px"></div>
+  </section>
+
+  <section class="card" style="margin-top:20px">
+    <h2>Historial de envíos</h2>
+    <div class="table-wrap"><table>
+      <thead><tr><th>Plantilla</th><th>Segmento</th><th>Enviados</th><th>Fallidos</th><th>Último envío</th></tr></thead>
+      <tbody id="newsletter-rows"></tbody>
+    </table></div>
+  </section>
+</main>
+
+<script type="module">
+const $ = (s, el = document) => el.querySelector(s);
+const esc = (s) => String(s).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]);
+const MAX_ROWS = 300;
+
+let config = null, overview = null, templates = [];
+let filter = "all";
+
+async function api(path, opts) {
+  const res = await fetch(path, opts);
+  const data = await res.json();
+  if (!res.ok) throw new Error(data.error ?? res.statusText);
+  return data;
+}
+
+function banner(html, kind = "") {
+  $("#banners").insertAdjacentHTML("beforeend", `<div class="banner ${kind}">${html}</div>`);
+}
+
+const FILTERS = {
+  all: ["Todos", () => true],
+  registered: ["Registrados", (c) => c.registered],
+  leads: ["Leads", (c) => !c.registered],
+  leadsPending: ["Leads sin welcome", (c) => !c.registered && !c.welcomed],
+  converted: ["Welcome → registrados", (c) => c.registered && c.welcomed],
+  errors: ["Con error", (c) => !!c.error],
+};
+
+function renderKpis() {
+  const c = overview.contacts;
+  const registered = c.filter((x) => x.registered).length;
+  const welcomed = c.filter((x) => x.welcomed).length;
+  const converted = c.filter((x) => x.welcomed && x.registered).length;
+  const pct = welcomed ? Math.round((converted / welcomed) * 100) : 0;
+  const kpis = [
+    [c.length, "Audiencia (suscritos)"],
+    [registered, "Registrados en la app"],
+    [c.length - registered, "Leads sin registrar"],
+    [welcomed, "Welcome enviado"],
+    [`${converted} <span class="small muted">(${pct}%)</span>`, "Con welcome y registrados"],
+  ];
+  $("#kpis").innerHTML = kpis.map(([v, l]) =>
+    `<div class="card kpi"><div class="value">${v}</div><div class="label">${l}</div></div>`).join("");
+}
+
+function renderTabs() {
+  $("#tabs").innerHTML = Object.entries(FILTERS).map(([key, [label, fn]]) => {
+    const n = overview.contacts.filter(fn).length;
+    return `<button data-filter="${key}" class="${key === filter ? "on" : ""}">${label} · ${n}</button>`;
+  }).join("");
+}
+
+function renderRows() {
+  const q = $("#search").value.trim().toLowerCase();
+  const list = overview.contacts.filter(FILTERS[filter][1]).filter((c) => !q || c.email.includes(q));
+  const pill = (on, yes, no, cls = "") => `<span class="pill ${on ? "yes" : cls}">${on ? yes : no}</span>`;
+  $("#rows").innerHTML = list.slice(0, MAX_ROWS).map((c) => `<tr>
+    <td>${esc(c.email)}</td>
+    <td>${pill(c.registered, "Sí", "No")}</td>
+    <td>${pill(c.welcomed, "Enviado", "—")}</td>
+    <td>${c.emails.length ? c.emails.map((t) => `<span class="pill">${esc(t)}</span>`).join(" ") : '<span class="muted">—</span>'}</td>
+    <td class="err">${c.error ? esc(c.error) : ""}</td>
+  </tr>`).join("") || `<tr><td colspan="5" class="muted">Sin resultados</td></tr>`;
+  $("#rows-info").textContent = list.length > MAX_ROWS
+    ? `Mostrando ${MAX_ROWS} de ${list.length}. Usa la búsqueda para afinar.` : `${list.length} contactos`;
+}
+
+const SEGMENT_LABELS = { leads: "Leads", registered: "Registrados" };
+
+function renderHistory() {
+  const rows = overview.history;
+  $("#newsletter-rows").innerHTML = rows.length
+    ? rows.map((r) => `<tr><td>${esc(r.templateId)}</td><td>${SEGMENT_LABELS[r.segment] ?? esc(r.segment)}</td>
+        <td>${r.sent}</td><td>${r.failed}</td><td>${new Date(r.lastSentAt).toLocaleString("es-ES")}</td></tr>`).join("")
+    : `<tr><td colspan="5" class="muted">Sin envíos todavía (el primer welcome se registró aparte, en la columna "1er welcome")</td></tr>`;
+}
+
+function setupPanel(panel) {
+  const segment = panel.dataset.segment;
+  const defaultTemplate = config.defaultTemplates[segment] ?? "";
+  panel.insertAdjacentHTML("beforeend", `
+    <div class="field"><label>Plantilla de Resend</label>
+      <input class="template" list="templates-list" value="${esc(defaultTemplate)}" placeholder="alias o id de la plantilla" /></div>
+    <div class="field row">
+      <div class="grow"><label>Máximo por tanda</label><input class="limit" type="number" min="1" max="500" value="${config.batchSize}" /></div>
+      <div><label>Modo</label><div class="toggle">
+        <button class="mode on" data-test="true">Test</button><button class="mode" data-test="false">Real</button>
+      </div></div>
+    </div>
+    <div class="pending muted">—</div>
+    <div class="row" style="margin-top:12px">
+      <button class="primary send">Enviar</button>
+      <button class="cancel" hidden>Cancelar</button>
+    </div>
+    <div class="result"></div>`);
+
+  let test = true, armed = false;
+  const sendBtn = $(".send", panel), cancelBtn = $(".cancel", panel);
+  const templateInput = $(".template", panel), limitInput = $(".limit", panel);
+
+  const disarm = () => {
+    armed = false;
+    cancelBtn.hidden = true;
+    sendBtn.className = "primary send";
+    sendBtn.textContent = test ? `Enviar prueba a ${config.testAudience.join(", ")}` : "Enviar";
+  };
+
+  async function refreshPending() {
+    const box = $(".pending", panel);
+    const templateId = templateInput.value.trim();
+    if (!templateId) { box.textContent = "Elige una plantilla"; return; }
+    if (!config.backendConfigured) { box.textContent = "Configura BACKEND_DATABASE_URL para ver pendientes"; return; }
+    box.textContent = "Calculando pendientes…";
+    try {
+      const { count, sample } = await api(`/api/pending?segment=${segment}&templateId=${encodeURIComponent(templateId)}`);
+      const limit = Number(limitInput.value) || 0;
+      box.innerHTML = `<strong>${count}</strong> pendientes · esta tanda: <strong>${Math.min(count, limit)}</strong>` +
+        (sample.length ? `<div class="small">Ej.: ${sample.slice(0, 3).map(esc).join(", ")}${count > 3 ? "…" : ""}</div>` : "");
+    } catch (e) { box.textContent = e.message; }
+  }
+
+  panel.querySelectorAll(".mode").forEach((b) => b.addEventListener("click", () => {
+    test = b.dataset.test === "true";
+    panel.querySelectorAll(".mode").forEach((x) => x.classList.toggle("on", x === b));
+    b.classList.toggle("real", !test);
+    disarm();
+  }));
+  templateInput.addEventListener("change", () => { disarm(); refreshPending(); });
+  limitInput.addEventListener("change", () => { disarm(); refreshPending(); });
+  cancelBtn.addEventListener("click", disarm);
+
+  sendBtn.addEventListener("click", async () => {
+    const templateId = templateInput.value.trim();
+    const limit = Number(limitInput.value) || 0;
+    const result = $(".result", panel);
+    if (!templateId) { result.className = "result err"; result.textContent = "Falta la plantilla"; return; }
+    // Envío real: primer clic arma, segundo confirma
+    if (!test && !armed) {
+      armed = true;
+      cancelBtn.hidden = false;
+      sendBtn.className = "danger send";
+      sendBtn.textContent = `Confirmar envío real (hasta ${limit})`;
+      return;
+    }
+    sendBtn.disabled = true;
+    sendBtn.textContent = "Enviando…";
+    result.className = "result muted";
+    result.textContent = "Enviando, puede tardar un poco…";
+    try {
+      const r = await api("/api/send", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ segment, templateId, limit, test }),
+      });
+      result.className = r.failed.length ? "result err" : "result ok";
+      result.textContent = `Enviados: ${r.sent.length} · Fallidos: ${r.failed.length}` +
+        (test ? " (prueba, no se registra)" : ` · Quedan pendientes: ${r.pending}`) +
+        r.failed.map((f) => `\n${f.email}: ${f.error}`).join("");
+      if (!test) await load();
+    } catch (e) {
+      result.className = "result err";
+      result.textContent = e.message;
+    } finally {
+      sendBtn.disabled = false;
+      disarm();
+    }
+  });
+
+  panel.refreshPending = refreshPending;
+  disarm();
+}
+
+async function load() {
+  $("#refresh").disabled = true;
+  try {
+    overview = await api("/api/overview");
+    renderKpis(); renderTabs(); renderRows(); renderHistory();
+    $("#updated").textContent = `Actualizado ${new Date().toLocaleTimeString("es-ES")}`;
+    document.querySelectorAll(".send-panel").forEach((p) => p.refreshPending?.());
+  } catch (e) {
+    $("#kpis").innerHTML = "";
+    banner(`No se pudieron cargar los datos: ${esc(e.message)}`, "error");
+  } finally {
+    $("#refresh").disabled = false;
+  }
+}
+
+async function init() {
+  config = await api("/api/config");
+  if (!config.backendConfigured) {
+    banner("Falta <code>BACKEND_DATABASE_URL</code> en <code>.env</code>: sin ella no se puede saber quién está registrado.");
+  }
+  try { templates = await api("/api/templates"); } catch (e) {
+    banner(`No se pudieron cargar las plantillas de Resend (${esc(e.message)}). Puedes escribir el alias a mano.`);
+  }
+  document.body.insertAdjacentHTML("beforeend",
+    `<datalist id="templates-list">${templates.map((t) => `<option value="${esc(t.id)}">${esc(t.name)}</option>`).join("")}</datalist>`);
+  document.querySelectorAll(".send-panel").forEach(setupPanel);
+
+  $("#tabs").addEventListener("click", (e) => {
+    const b = e.target.closest("button[data-filter]");
+    if (!b) return;
+    filter = b.dataset.filter;
+    renderTabs(); renderRows();
+  });
+  $("#search").addEventListener("input", renderRows);
+  $("#refresh").addEventListener("click", () => { $("#banners").querySelectorAll(".error").forEach((x) => x.remove()); load(); });
+
+  if (config.backendConfigured) await load();
+}
+
+init();
+</script>
+</body>
+</html>

@@ -17,3 +17,16 @@ model welcomedUser {
   status Boolean @default(false)
   error  String?
 }
+
+// Un registro por (email, plantilla) para no mandar dos veces el mismo email.
+// segment: "leads" (no registrados) o "registered" (registrados en la app)
+model emailSend {
+  email      String
+  templateId String
+  segment    String
+  status     Boolean  @default(false)
+  error      String?
+  sentAt     DateTime @default(now())
+
+  @@id([email, templateId])
+}

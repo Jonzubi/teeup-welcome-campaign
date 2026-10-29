@@ -1,99 +1,22 @@
-import { PrismaPg } from "@prisma/adapter-pg";
 import "dotenv/config";
-import { PrismaClient } from "./generated/prisma/client";
-import { resend } from "./lib/resend";
+import {
+  DEFAULT_WELCOME_TEMPLATE_ID,
+  EMAIL_BATCH_SIZE,
+  sendBatch,
+} from "./lib/campaigns";
 
 const IS_TEST = true;
-const testAudience = ["devteeupgolf@gmail.com"];
-const FROM_EMAIL = "noreply@mail.teeup.es";
-const EMAIL_BATCH_SIZE = 80;
-const WELCOME_TEMPLATE_ID = "welcome-teeup";
+// Cambiar por la plantilla a enviar; cada lead la recibe una sola vez
+const LEADS_TEMPLATE_ID = DEFAULT_WELCOME_TEMPLATE_ID;
 
-const prisma = new PrismaClient({
-  adapter: new PrismaPg({
-    connectionString: process.env.DATABASE_URL,
-  }),
+// Solo a leads (contactos de la audiencia que no se han registrado)
+const result = await sendBatch({
+  segment: "leads",
+  templateId: LEADS_TEMPLATE_ID,
+  limit: EMAIL_BATCH_SIZE,
+  test: IS_TEST,
 });
-
-async function main() {
-  let sentCount = 0;
-  const contacts = await getAudienceContacts();
-  for (const contact of contacts.data) {
-    console.log(`Sending welcome email to: ${contact.email}`);
-    const isWelcomed = await getIfUserIsWelcomed(contact.email);
-    console.log(`Is user welcomed: ${isWelcomed}`);
-    if (isWelcomed) {
-      console.log(`User ${contact.email} has already been welcomed. Skipping.`);
-      continue;
-    }
-    console.log(`Sending welcome email to: ${contact.email}`);
-    await sendTemplateToUser(contact.email);
-    console.log(`Welcome email sent to: ${contact.email}`);
-    sentCount++;
-    console.log(`Sent count: ${sentCount}`);
-    if (sentCount >= EMAIL_BATCH_SIZE) {
-      console.log(`Reached batch limit of ${EMAIL_BATCH_SIZE}. Stopping.`);
-      break;
-    }
-  }
-}
-
-async function getAudienceContacts(): Promise<{
-  data: Array<{
-    email: string;
-  }>;
-}> {
-  if (IS_TEST) {
-    return { data: testAudience.map((email) => ({ email })) };
-  }
-
-  const contacts = await fetch(
-    `https://api.resend.com/audiences/${process.env.RESEND_AUDIENCE_ID}/contacts`,
-    {
-      headers: {
-        Authorization: `Bearer ${process.env.RESEND_API_KEY}`,
-      },
-    },
-  );
-
-  if (!contacts.ok) {
-    throw new Error(await contacts.text());
-  }
-
-  const data: { data: Array<{ email: string }> } =
-    (await contacts.json()) as any;
-
-  return data;
-}
-
-async function getIfUserIsWelcomed(email: string) {
-  const user = await prisma.welcomedUser.findUnique({
-    where: { email },
-  });
-  return user?.status ?? false;
-}
-
-async function sendTemplateToUser(email: string) {
-  try {
-    await resend.emails.send({
-      from: FROM_EMAIL,
-      to: email,
-      template: {
-        id: WELCOME_TEMPLATE_ID,
-      },
-    });
-    await prisma.welcomedUser.upsert({
-      where: { email },
-      update: { status: true, error: null },
-      create: { email, status: true },
-    });
-  } catch (error) {
-    await prisma.welcomedUser.upsert({
-      where: { email },
-      update: { status: false, error: (error as Error).message },
-      create: { email, status: false, error: (error as Error).message },
-    });
-  }
-}
-
-main();
+console.log(
+  `Sent: ${result.sent.length} · Failed: ${result.failed.length} · Still pending: ${result.pending}`,
+);
+process.exit(0);

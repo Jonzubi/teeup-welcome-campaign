@@ -3,6 +3,12 @@
   "module": "index.ts",
   "type": "module",
   "private": true,
+  "scripts": {
+    "ui": "bun --hot server.ts",
+    "welcome": "bun run index.ts",
+    "newsletter": "bun run newsletter.ts",
+    "stats": "bun run scripts/stats.ts"
+  },
   "devDependencies": {
     "@types/bun": "latest"
   },
